@@ -27,6 +27,8 @@
     .side-stack .landing-rank-me{min-width:0;color:#dce7fb!important;font-size:11px;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     #landingTop10Btn{flex:0 0 auto;border:1px solid rgba(255,230,93,.38);background:#ffe65d;color:#16172a;padding:9px 12px;border-radius:11px;font-size:11px;font-weight:1000;cursor:pointer;box-shadow:0 7px 18px rgba(255,212,48,.17)}
     #landingTop10Btn:hover{filter:brightness(1.04);transform:translateY(-1px)}
+    #startLayer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .side-stack .landing-rank-card{max-height:none!important}
     #bgAudioHint{pointer-events:auto!important;cursor:pointer!important;bottom:auto!important;top:18px!important;background:linear-gradient(90deg,#111a38,#39205d)!important;border-color:rgba(255,230,93,.55)!important;color:#fff!important;box-shadow:0 10px 34px rgba(0,0,0,.34),0 0 0 3px rgba(255,230,93,.08)!important}
     #bgAudioHint:after{content:" • tocar";color:#ffe65d}
     @media(max-width:760px){
@@ -62,16 +64,18 @@
       return Object.entries(raw).map(([name,v])=>({name:String(name),score:Number(v&&v.score||0),when:Number(v&&v.when||0)})).sort((a,b)=>b.score-a.score||a.when-b.when).slice(0,20);
     }catch(e){return []}
   }
+  let landingTop10Expanded=false;
   function renderLandingRanking(){
-    const list=document.getElementById("landingRankList"),mine=document.getElementById("landingRankMe");
+    const list=document.getElementById("landingRankList"),mine=document.getElementById("landingRankMe"),toggle=document.getElementById("landingTop10Btn");
     if(!list||!mine)return;
-    const all=rows(),top=all.slice(0,3),me=player();
+    const all=rows(),me=player(),limit=landingTop10Expanded?10:3;
     const med=["🥇","🥈","🥉"];
-    list.innerHTML=[0,1,2].map(i=>{
-      const r=top[i];
-      if(r)return `<div class="landing-rank-row"><div class="landing-rank-pos">${med[i]}</div><div class="landing-rank-name">${esc(r.name)}</div><div class="landing-rank-score">${Math.floor(r.score)} m</div></div>`;
-      return `<div class="landing-rank-row landing-rank-placeholder"><div class="landing-rank-pos">${med[i]}</div><div class="landing-rank-name">— aguardando recorde —</div><div class="landing-rank-score">—</div></div>`;
+    list.innerHTML=Array.from({length:limit},(_,i)=>{
+      const r=all[i],pos=i<3?med[i]:`${i+1}º`;
+      if(r)return `<div class="landing-rank-row"><div class="landing-rank-pos">${pos}</div><div class="landing-rank-name">${esc(r.name)}</div><div class="landing-rank-score">${Math.floor(r.score)} m</div></div>`;
+      return `<div class="landing-rank-row landing-rank-placeholder"><div class="landing-rank-pos">${pos}</div><div class="landing-rank-name">— aguardando recorde —</div><div class="landing-rank-score">—</div></div>`;
     }).join("");
+    if(toggle){toggle.textContent=landingTop10Expanded?"FECHAR TOP 10":"VER TOP 10";toggle.setAttribute("aria-expanded",landingTop10Expanded?"true":"false")}
     if(!me){mine.textContent="Escolha seu nome e tente entrar no Top 10.";return}
     const idx=all.findIndex(r=>r.name.toLocaleLowerCase()===me.toLocaleLowerCase());
     if(idx<0)mine.textContent=`${me}: ainda sem recorde.`;
@@ -82,10 +86,12 @@
   window.addEventListener("storage",renderLandingRanking);
 
   const top10=document.getElementById("landingTop10Btn");
-  if(top10)top10.addEventListener("click",()=>{
-    const btn=document.getElementById("rankingOpenBtn");
-    if(btn&&typeof btn.onclick==="function")btn.click();
-    else{const ov=document.getElementById("rankingOverlay");if(ov)ov.style.display="grid"}
+  if(top10)top10.addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();
+    landingTop10Expanded=!landingTop10Expanded;
+    renderLandingRanking();
+    const card=document.getElementById("landingRankingCard");
+    if(card)card.scrollIntoView({behavior:"smooth",block:"nearest"});
   });
 
   function audioHintSetup(){
