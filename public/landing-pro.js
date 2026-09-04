@@ -20,6 +20,7 @@
     .side-stack .landing-rank-list{display:grid;gap:7px;margin-top:5px}
     .side-stack .landing-rank-row{display:grid;grid-template-columns:35px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08)}
     .side-stack .landing-rank-row:nth-child(1){background:linear-gradient(90deg,rgba(255,215,0,.18),rgba(255,255,255,.06));border-color:rgba(255,215,0,.28)}
+    .side-stack .landing-rank-placeholder{opacity:.62}
     .side-stack .landing-rank-pos{font-size:18px;text-align:center;color:#ffe65d!important}.side-stack .landing-rank-name{font-size:13px;font-weight:950;color:#fff!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side-stack .landing-rank-score{font-size:12px;font-weight:1000;color:#b9e0ff!important;white-space:nowrap}
     .side-stack .landing-rank-empty{padding:12px;border-radius:12px;background:rgba(255,255,255,.06);color:#c4d2ec!important;font-size:12px;font-weight:800;text-align:center}
     .side-stack .landing-rank-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px}
@@ -42,7 +43,7 @@
     card.className="panel landing-rank-card";
     card.innerHTML=`
       <div class="landing-rank-head">
-        <div><div class="landing-rank-title">🏆 Ranking dos sobreviventes</div><div class="landing-rank-sub">Top 10 • placar do jogo</div></div>
+        <div><div class="landing-rank-title">🏆 Ranking dos sobreviventes</div><div class="landing-rank-sub">Top 3 visível • Top 10 completo</div></div>
         <div class="landing-rank-badge">TOP 10</div>
       </div>
       <div id="landingRankList" class="landing-rank-list"></div>
@@ -65,11 +66,12 @@
     const list=document.getElementById("landingRankList"),mine=document.getElementById("landingRankMe");
     if(!list||!mine)return;
     const all=rows(),top=all.slice(0,3),me=player();
-    if(!top.length){list.innerHTML='<div class="landing-rank-empty">Ainda não há recordes neste aparelho. Seja o primeiro.</div>'}
-    else{
-      const med=["🥇","🥈","🥉"];
-      list.innerHTML=top.map((r,i)=>`<div class="landing-rank-row"><div class="landing-rank-pos">${med[i]}</div><div class="landing-rank-name">${esc(r.name)}</div><div class="landing-rank-score">${Math.floor(r.score)} m</div></div>`).join("");
-    }
+    const med=["🥇","🥈","🥉"];
+    list.innerHTML=[0,1,2].map(i=>{
+      const r=top[i];
+      if(r)return `<div class="landing-rank-row"><div class="landing-rank-pos">${med[i]}</div><div class="landing-rank-name">${esc(r.name)}</div><div class="landing-rank-score">${Math.floor(r.score)} m</div></div>`;
+      return `<div class="landing-rank-row landing-rank-placeholder"><div class="landing-rank-pos">${med[i]}</div><div class="landing-rank-name">— aguardando recorde —</div><div class="landing-rank-score">—</div></div>`;
+    }).join("");
     if(!me){mine.textContent="Escolha seu nome e tente entrar no Top 10.";return}
     const idx=all.findIndex(r=>r.name.toLocaleLowerCase()===me.toLocaleLowerCase());
     if(idx<0)mine.textContent=`${me}: ainda sem recorde.`;
