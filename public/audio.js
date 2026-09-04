@@ -72,7 +72,12 @@
       case"coin":tone(988,.045,"square",.072,t);tone(1319,.075,"square",.068,t+.045);break;
       case"kick":tone(180,.05,"square",.07,t,105);noise(.04,.035,t,700);break;
       case"stomp":
-        tone(92,.09,"triangle",.13,t,48);noise(.07,.085,t,260);tone(265,.055,"square",.085,t+.018,115);tone(520,.04,"square",.045,t+.05,360);break;
+        tone(240,.055,"square",.12,t,105);
+        tone(118,.085,"triangle",.145,t+.006,54);
+        noise(.052,.10,t+.004,320);
+        tone(430,.045,"square",.075,t+.028,185);
+        tone(150,.04,"square",.055,t+.052,95);
+        break;
       case"powerup":case"sprout":arp([60,64,67,72,76],.055,"square",.065);break;
       case"powerdown":arp([72,67,63,58],.07,"sawtooth",.06);break;
       case"fireball":tone(520,.05,"square",.065,t,230);noise(.03,.03,t,1200);break;
@@ -146,7 +151,7 @@
 
   function maybeFoodSting(m){const now=performance.now();if(now-lastFoodAt<1800)return;let nearest=99999,wx=null;document.querySelectorAll(".food-world-prop[data-wx]").forEach(el=>{const x=Number(el.dataset.wx);if(!Number.isFinite(x))return;const d=Math.abs(x-(m.X||0));if(d<nearest){nearest=d;wx=x}});if(nearest<78&&Math.abs((wx||0)-lastFoodX)>20){lastFoodAt=now;lastFoodX=wx||0;sfx("food")}}
 
-  setInterval(()=>{try{if(!(window.__ready&&musicAllowed()))return;const m=window.Mario&&Mario.MarioCharacter;if(!m)return;const now=performance.now();if(!prevGround&&m.OnGround)sfx("land");prevGround=!!m.OnGround;const speed=Math.abs(Number(m.Xa)||0);if(m.OnGround&&speed>.42&&now-lastFoot>Math.max(145,265-speed*10)){lastFoot=now;sfx("step")}maybeFoodSting(m)}catch(e){}},60);
+  setInterval(()=>{try{if(!(window.__ready&&musicAllowed()))return;const m=window.Mario&&Mario.MarioCharacter;if(!m)return;if(!prevGround&&m.OnGround)sfx("land");prevGround=!!m.OnGround;maybeFoodSting(m)}catch(e){}},60);
 
   function setEnabled(on){enabled=!!on;try{localStorage.setItem(STORE_KEY,enabled?"on":"off")}catch(e){}paintButton();if(enabled){hint.hidden=unlocked;unlockAudio().then(()=>{sfx("ui");nextStepTime=ctx?ctx.currentTime+.03:0})}else{hint.hidden=true;if(ctx){try{master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(.0001,ctx.currentTime,.025)}catch(e){}setTimeout(()=>{if(ctx&&master)master.gain.value=.86},120)}}}
 
@@ -155,8 +160,7 @@
   document.addEventListener("pointerdown",gesture,{capture:true,passive:true});document.addEventListener("touchstart",gesture,{capture:true,passive:true});document.addEventListener("keydown",gesture,{capture:true});
   document.addEventListener("click",e=>{const x=e.target&&e.target.closest?e.target.closest("button"):null;if(!x||x===btn)return;const id=x.id||"";if(id==="startBtn")setTimeout(()=>sfx("start"),25);else if(["pauseBtn","resumeBtn","pauseRetryBtn","pauseHomeBtn","retryBtn","gameOverHomeBtn","rankingOpenBtn","rankingCloseBtn"].includes(id))sfx("ui")},true);
 
-  // Autoplay with sound is blocked by modern browsers. Try anyway; if blocked, the hint stays visible.
   if(enabled){initAudio();unlockAudio();setTimeout(()=>{if(!unlocked)hint.hidden=false},250)}else hint.hidden=true;
 
-  window.__bgAudio={version:"2.0.0",sfx,enable:()=>setEnabled(true),disable:()=>setEnabled(false),toggle:()=>setEnabled(!enabled),get enabled(){return enabled},get unlocked(){return unlocked},themes:THEMES.map(x=>x.name)};
+  window.__bgAudio={version:"2.0.1",sfx,enable:()=>setEnabled(true),disable:()=>setEnabled(false),toggle:()=>setEnabled(!enabled),get enabled(){return enabled},get unlocked(){return unlocked},themes:THEMES.map(x=>x.name)};
 })();
