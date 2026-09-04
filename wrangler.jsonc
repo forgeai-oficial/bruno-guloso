@@ -1,7 +1,10 @@
 {
   "name": "bruno-guloso",
+  "main": "worker.js",
   "compatibility_date": "2026-09-03",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
