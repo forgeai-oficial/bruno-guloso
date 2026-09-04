@@ -8,7 +8,7 @@ export default {
       return new HTMLRewriter()
         .on("body", {
           element(el) {
-            el.append('<script src="/audio.js?v=3"></script><script src="/audio-fix-v3.js?v=1"></script><script src="/ranking-pro.js?v=2"></script><script src="/landing-pro.js?v=2"></script>', { html: true });
+            el.append('<script src="/audio.js?v=4"></script><script src="/audio-fix-v3.js?v=1"></script><script src="/ranking-pro.js?v=2"></script><script src="/landing-pro.js?v=2"></script>', { html: true });
           }
         })
         .transform(response);
