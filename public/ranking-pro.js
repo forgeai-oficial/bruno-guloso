@@ -39,11 +39,15 @@
       row.classList.remove("rank-top1","rank-top2","rank-top3","rank-me");
       if(i<3) row.classList.add(`rank-top${i+1}`);
       const pos=row.querySelector(".rank-pos");
-      if(pos) pos.textContent=i<3?medals[i]:`${i+1}º`;
+      const label=i<3?medals[i]:`${i+1}º`;
+      // Important: do not rewrite identical text. Rewriting textContent inside
+      // a subtree watched by MutationObserver can create an endless microtask loop.
+      if(pos && pos.textContent!==label) pos.textContent=label;
       const cells=row.children;
       const name=cells[1]?cells[1].textContent.trim().toLocaleLowerCase():"";
       if(me && name===me) row.classList.add("rank-me");
-      row.style.display=i<limit?"":"none";
+      const wanted=i<limit?"":"none";
+      if(row.style.display!==wanted) row.style.display=wanted;
     });
   }
 
@@ -65,17 +69,19 @@
       if(idx<10){if(pin)pin.remove();return}
       const r=rows[idx];
       if(!pin){pin=document.createElement("div");pin.id="rankSelfPin";full.insertAdjacentElement("afterend",pin)}
-      pin.innerHTML=`<div class="rank-row rank-me"><div class="rank-pos">${idx+1}º</div><div>${esc(r.name)}</div><div class="rank-score">${Math.floor(r.score)} m</div></div>`;
+      const html=`<div class="rank-row rank-me"><div class="rank-pos">${idx+1}º</div><div>${esc(r.name)}</div><div class="rank-score">${Math.floor(r.score)} m</div></div>`;
+      if(pin.innerHTML!==html) pin.innerHTML=html;
     }catch(e){if(pin)pin.remove()}
   }
 
+  let refreshQueued=false;
   function setup(){
     const go=document.getElementById("gameOverRanking");
     const full=document.getElementById("rankingFullList");
     if(!go||!full) return false;
 
     const goTitle=go.closest(".ranking-box")?.querySelector(".ranking-title h3");
-    if(goTitle) goTitle.textContent="🏆 Top 3";
+    if(goTitle && goTitle.textContent!=="🏆 Top 3") goTitle.textContent="🏆 Top 3";
 
     const titleRow=go.closest(".ranking-box")?.querySelector(".ranking-title");
     if(titleRow && !document.getElementById("gameOverTop10Btn")){
@@ -90,13 +96,26 @@
 
     const overlay=document.getElementById("rankingOverlay");
     const h2=overlay?.querySelector("h2");
-    if(h2) h2.textContent="Top 10 dos sobreviventes";
+    if(h2 && h2.textContent!=="Top 10 dos sobreviventes") h2.textContent="Top 10 dos sobreviventes";
 
-    const refresh=()=>{decorate(go,3);decorate(full,10);updateSelfPin()};
-    new MutationObserver(refresh).observe(go,{childList:true,subtree:true});
-    new MutationObserver(refresh).observe(full,{childList:true,subtree:true});
-    document.getElementById("rankingOpenBtn")?.addEventListener("click",()=>setTimeout(refresh,0));
-    document.getElementById("gameOverOverlay")?.addEventListener("transitionend",refresh);
+    const refresh=()=>{
+      refreshQueued=false;
+      decorate(go,3);
+      decorate(full,10);
+      updateSelfPin();
+    };
+    const scheduleRefresh=()=>{
+      if(refreshQueued)return;
+      refreshQueued=true;
+      requestAnimationFrame(refresh);
+    };
+
+    // Observe only direct row insertion/removal. Watching the entire subtree made
+    // our own medal text edits retrigger the observer forever on game over.
+    new MutationObserver(scheduleRefresh).observe(go,{childList:true});
+    new MutationObserver(scheduleRefresh).observe(full,{childList:true});
+    document.getElementById("rankingOpenBtn")?.addEventListener("click",scheduleRefresh);
+    document.getElementById("gameOverOverlay")?.addEventListener("transitionend",scheduleRefresh);
     refresh();
     return true;
   }
