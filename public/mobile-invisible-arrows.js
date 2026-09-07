@@ -40,13 +40,21 @@
     b.className="bgInvisibleArrowPad";
     b.dataset.dir=String(dir);
     b.setAttribute("aria-label",label);
+    b.tabIndex=-1;
     b.textContent=dir<0?"←":"→";
     document.body.appendChild(b);
     return b;
   }
 
+  // Áreas extras já existentes: uma acima de cada seta visível.
   const leftPad=makePad(-1,"Mover para trás - área extra");
-  const rightPad=makePad(1,"Mover para frente - área extra");
+  const rightPad=makePad(1,"Mover para frente - área extra acima");
+
+  // Novas áreas pedidas para o botão →:
+  // 1) uma imediatamente à direita do botão visível;
+  // 2) outra imediatamente acima dessa nova área.
+  const rightFrontPad=makePad(1,"Mover para frente - área extra à direita");
+  const rightFrontTopPad=makePad(1,"Mover para frente - área extra superior direita");
 
   const controls=()=>window.__bgMobileControls||null;
   const active=()=>document.body.classList.contains("bg-game-active")&&isMobile()&&isLandscape()&&!window.__bgOrientationBlocked&&!window.__bgGameOverActive&&!window.__bgVictoryActive;
@@ -86,24 +94,46 @@
   }
   bind(leftPad,-1);
   bind(rightPad,1);
+  bind(rightFrontPad,1);
+  bind(rightFrontTopPad,1);
 
-  function place(pad,source){
-    if(!source||!active())return;
+  function metrics(source){
+    if(!source||!active())return null;
     const r=source.getBoundingClientRect();
-    if(!r.width||!r.height)return;
-    const size=Math.max(58,Math.round(r.width));
-    pad.style.width=size+"px";
-    pad.style.height=Math.max(58,Math.round(r.height))+"px";
-    pad.style.left=Math.round(r.left)+"px";
-    pad.style.top=Math.round(r.top-Math.max(58,r.height))+"px";
+    if(!r.width||!r.height)return null;
+    return {
+      left:r.left,
+      top:r.top,
+      width:Math.max(58,Math.round(r.width)),
+      height:Math.max(58,Math.round(r.height)),
+      right:r.right
+    };
+  }
+
+  function setBox(pad,left,top,w,h){
+    pad.style.width=Math.round(w)+"px";
+    pad.style.height=Math.round(h)+"px";
+    pad.style.left=Math.round(left)+"px";
+    pad.style.top=Math.round(top)+"px";
   }
 
   function sync(){
     const l=document.querySelector('footer [data-key="left"]');
     const r=document.querySelector('footer [data-key="right"]');
     if(active()){
-      place(leftPad,l);
-      place(rightPad,r);
+      const lm=metrics(l);
+      const rm=metrics(r);
+      if(lm)setBox(leftPad,lm.left,lm.top-lm.height,lm.width,lm.height);
+      if(rm){
+        // mantém o extra já existente logo acima do →
+        setBox(rightPad,rm.left,rm.top-rm.height,rm.width,rm.height);
+
+        // novo extra logo à frente (direita) do → visível
+        setBox(rightFrontPad,rm.right,rm.top,rm.width,rm.height);
+
+        // novo extra logo acima do extra da direita
+        setBox(rightFrontTopPad,rm.right,rm.top-rm.height,rm.width,rm.height);
+      }
     }else{
       pressed.clear();
       setDir(0);
@@ -115,5 +145,10 @@
   addEventListener("blur",()=>{pressed.clear();setDir(0)});
   document.addEventListener("visibilitychange",()=>{if(document.hidden){pressed.clear();setDir(0)}});
 
-  window.__bgInvisibleArrows={left:leftPad,right:rightPad};
+  window.__bgInvisibleArrows={
+    left:leftPad,
+    rightTop:rightPad,
+    rightFront:rightFrontPad,
+    rightFrontTop:rightFrontTopPad
+  };
 })();
