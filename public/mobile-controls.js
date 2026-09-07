@@ -3,8 +3,8 @@
   if(window.__BG_MOBILE_CONTROLS__)return;
   window.__BG_MOBILE_CONTROLS__=true;
 
-  const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=900;
-  const isPortrait=()=>window.innerHeight>=window.innerWidth;
+  const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=1100;
+  const isLandscape=()=>window.innerWidth>window.innerHeight;
 
   const style=document.createElement("style");
   style.textContent=`
@@ -28,7 +28,7 @@
       #bgTouchStick{position:fixed;z-index:125;display:none;width:86px;height:86px;border-radius:50%;border:2px solid rgba(255,255,255,.28);background:rgba(7,14,34,.22);box-shadow:inset 0 0 24px rgba(0,0,0,.22);pointer-events:none;transform:translate(-50%,-50%)}
       #bgTouchStick.show{display:block}#bgTouchKnob{position:absolute;left:50%;top:50%;width:38px;height:38px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.78);box-shadow:0 5px 15px rgba(0,0,0,.25)}
       #bgJumpPulse{position:fixed;z-index:124;display:none;width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,229,94,.78);background:rgba(255,229,94,.12);pointer-events:none;transform:translate(-50%,-50%);animation:bgJumpPulse .48s ease-out forwards}@keyframes bgJumpPulse{to{transform:translate(-50%,-50%) scale(1.45);opacity:0}}
-      #bgMobileTip{position:fixed;z-index:260;left:50%;bottom:92px;transform:translateX(-50%);display:none;width:min(520px,90vw);padding:10px 13px;border-radius:14px;background:rgba(7,14,34,.92);border:1px solid rgba(255,255,255,.2);color:#fff;text-align:center;font:900 11px/1.35 system-ui;box-shadow:0 10px 28px rgba(0,0,0,.35);pointer-events:none}
+      #bgMobileTip{position:fixed;z-index:260;left:50%;bottom:82px;transform:translateX(-50%);display:none;width:min(520px,88vw);padding:9px 12px;border-radius:14px;background:rgba(7,14,34,.92);border:1px solid rgba(255,255,255,.2);color:#fff;text-align:center;font:900 10px/1.35 system-ui;box-shadow:0 10px 28px rgba(0,0,0,.35);pointer-events:none}
       #bgMobileTip.show{display:block;animation:bgTip 3.4s ease forwards}@keyframes bgTip{0%,8%{opacity:0;transform:translate(-50%,8px)}18%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-5px)}}
     }
   `;
@@ -37,7 +37,7 @@
   const stick=document.createElement("div");stick.id="bgTouchStick";stick.innerHTML='<div id="bgTouchKnob"></div>';document.body.appendChild(stick);
   const knob=stick.firstElementChild;
   const pulse=document.createElement("div");pulse.id="bgJumpPulse";document.body.appendChild(pulse);
-  const tip=document.createElement("div");tip.id="bgMobileTip";tip.textContent="🎮 CONTROLES: use os botões OU toque na tela • lado esquerdo move • lado direito pula • CORRER pode ser segurado junto";document.body.appendChild(tip);
+  const tip=document.createElement("div");tip.id="bgMobileTip";tip.textContent="🎮 PAISAGEM: botões OU toque na tela • esquerda move • direita pula • CORRER pode ser segurado junto";document.body.appendChild(tip);
 
   let movePointer=null,jumpPointer=null,originX=0,originY=0,currentDir=0;
   let tipShown=false;
@@ -55,7 +55,7 @@
   function gameActive(){
     return document.body.classList.contains("bg-game-active")&&
       !window.__bgGameOverActive&&!window.__bgVictoryActive&&
-      !window.__bgOrientationBlocked&&isPortrait();
+      !window.__bgOrientationBlocked&&isLandscape();
   }
   function updateStick(x,y){
     const dx=Math.max(-28,Math.min(28,x-originX));
@@ -94,11 +94,11 @@
 
   function maybeTip(){
     if(!isMobile()||!gameActive()||tipShown)return;
-    try{if(localStorage.getItem("bg_mobile_controls_tip_v1")==="1"){tipShown=true;return}localStorage.setItem("bg_mobile_controls_tip_v1","1")}catch(e){}
+    try{if(localStorage.getItem("bg_mobile_controls_tip_landscape_v1")==="1"){tipShown=true;return}localStorage.setItem("bg_mobile_controls_tip_landscape_v1","1")}catch(e){}
     tipShown=true;tip.classList.add("show");setTimeout(()=>tip.classList.remove("show"),3600);
   }
 
-  async function requestGameFullscreenPortrait(){
+  async function requestGameFullscreenLandscape(){
     if(!isMobile())return;
     try{
       if(!document.fullscreenElement){
@@ -107,20 +107,18 @@
       }
     }catch(e){}
     try{
-      if(screen.orientation&&typeof screen.orientation.lock==="function")await screen.orientation.lock("portrait");
+      if(screen.orientation&&typeof screen.orientation.lock==="function")await screen.orientation.lock("landscape");
     }catch(e){}
   }
 
   const start=document.getElementById("startBtn");
-  if(start)start.addEventListener("click",()=>{if(isMobile())requestGameFullscreenPortrait()},{capture:true});
+  if(start)start.addEventListener("click",()=>{if(isMobile())requestGameFullscreenLandscape()},{capture:true});
 
   document.querySelectorAll("footer [data-key]").forEach(btn=>btn.addEventListener("pointerdown",e=>{
     if(e.pointerType!=="mouse")vibrate(7);
   },{passive:true}));
 
-  function editableTarget(t){
-    return !!(t&&t.closest&&t.closest("input,textarea,[contenteditable='true']"));
-  }
+  function editableTarget(t){return !!(t&&t.closest&&t.closest("input,textarea,[contenteditable='true']"));}
   function blockGameSelection(e){
     if(!document.body.classList.contains("bg-game-active")||editableTarget(e.target))return;
     e.preventDefault();
@@ -138,9 +136,9 @@
 
   const orientationSync=()=>{if(!gameActive())releaseTouch();};
   addEventListener("resize",orientationSync,{passive:true});
-  addEventListener("orientationchange",()=>setTimeout(orientationSync,90),{passive:true});
+  addEventListener("orientationchange",()=>setTimeout(orientationSync,100),{passive:true});
   addEventListener("blur",releaseTouch);
   document.addEventListener("visibilitychange",()=>{if(document.hidden)releaseTouch()});
 
-  window.__bgMobileControls={setDir,setJump,get directTouch(){return true},get buttons(){return true},get portraitOnly(){return true}};
+  window.__bgMobileControls={setDir,setJump,get directTouch(){return true},get buttons(){return true},get landscapeOnly(){return true}};
 })();
