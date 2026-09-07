@@ -107,8 +107,6 @@
       ctx.imageSmoothingEnabled=false;
       ctx.drawImage(src,0,0);
 
-      // A folha real tem 8 quadros de 16x16 na primeira linha.
-      // Todos os quadros desta linha são cogumelos no asset usado pelo jogo.
       const frames=frameCount(c);
       ctx.fillStyle=PINK_MARK;
       for(let i=0;i<frames;i++)ctx.fillRect(i*FRAME+MARK_X,MARK_Y,MARK_W,MARK_H);
@@ -169,4 +167,14 @@
     get patched(){return !!patchedSheet},
     get drawHook(){return !!drawHookInstalled}
   };
+})();
+
+(()=>{
+  "use strict";
+  if(window.__BG_MAP_EXPANSION_LOADER_V1__)return;
+  window.__BG_MAP_EXPANSION_LOADER_V1__=true;
+  const s=document.createElement("script");
+  s.src="/map-expansion-v1.js?v=1";
+  s.async=false;
+  (document.head||document.documentElement).appendChild(s);
 })();
