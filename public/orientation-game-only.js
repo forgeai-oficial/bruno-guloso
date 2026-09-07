@@ -16,6 +16,7 @@
   style.id="bgLandscapeSessionStyle";
   style.textContent=`
     @media (max-width:1100px),(pointer:coarse){
+      body:not(.bg-game-active) #bgRotateHint{display:none!important}
       body.bg-game-active #bgRotateHint{display:none!important}
       body.bg-game-active.bg-css-landscape{
         position:fixed!important;
@@ -92,12 +93,13 @@
   }
 
   async function endSession(){
-    if(!session&&!window.__bgLandscapeSessionActive)return;
+    const wasActive=!!(session||window.__bgLandscapeSessionActive);
     session=false;
     window.__bgLandscapeSessionActive=false;
     document.body.classList.remove("bg-css-landscape","bg-mobile-portrait","bg-orientation-blocked");
     window.__bgOrientationBlocked=false;
     document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerHeight)+"px");
+    if(!wasActive)return;
     try{if(screen.orientation&&typeof screen.orientation.unlock==="function")screen.orientation.unlock()}catch(e){}
     if(fullscreenOwned&&document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}
     fullscreenOwned=false;
@@ -126,6 +128,8 @@
     if(session&&gameActive()){
       clearOrientationBlock();
       applyFallback();
+    }else if(!gameActive()){
+      clearOrientationBlock();
     }
     requestAnimationFrame(enforce);
   }
