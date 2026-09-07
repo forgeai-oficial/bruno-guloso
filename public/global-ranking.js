@@ -1,9 +1,9 @@
 (()=>{
   "use strict";
-  if(window.__BG_GLOBAL_RANKING_V2__) return;
-  window.__BG_GLOBAL_RANKING_V2__=true;
+  if(window.__BG_GLOBAL_RANKING_V3__) return;
+  window.__BG_GLOBAL_RANKING_V3__=true;
 
-  const LOCAL_KEY="bruno_guloso_local_board";
+  const LOCAL_KEY="bruno_guloso_local_board_v2";
   const NAME_KEY="bruno_guloso_player_name";
   let lastSubmit="";
   let busy=false;
@@ -14,19 +14,28 @@
 
   function metrics(){
     try{if(typeof window.__bgRankingMetrics==="function")return window.__bgRankingMetrics()}catch(e){}
-    const distance=Math.max(0,Math.floor(Number(window.__bgLastDistance)||Number(window.__bgLastScore)||0));
+    const distance=Math.max(0,Math.floor(Number(window.__bgLastDistance)||0));
     const donuts=Math.max(0,Math.floor(Number(window.__bgLastDonuts)||Number(window.__bgDonutsCollected)||0));
-    const donutPoints=Math.max(0,Math.floor(Number(window.__bgLastDonutPoints)||Number(window.__bgDonutScore)||donuts*100));
-    return {distance,donuts,donutPoints,total:distance+donutPoints};
+    const blues=Math.max(0,Math.floor(Number(window.__bgLastBlueMushrooms)||Number(window.__bgBlueMushroomsCollected)||0));
+    const donutPoints=donuts*10,bluePoints=blues*50;
+    return {distance,donuts,blues,donutPoints,bluePoints,total:distance+donutPoints+bluePoints};
   }
 
   function normalizeRow(r){
-    return {name:cleanName(r&&r.name),score:Math.max(0,Math.floor(Number(r&&r.score)||0)),distance:Math.max(0,Math.floor(Number(r&&r.distance)||0)),donuts:Math.max(0,Math.floor(Number(r&&r.donuts)||0)),when:Number(r&&r.when)||0};
+    return {
+      name:cleanName(r&&r.name),
+      score:Math.max(0,Math.floor(Number(r&&r.score)||0)),
+      distance:Math.max(0,Math.floor(Number(r&&r.distance)||0)),
+      donuts:Math.max(0,Math.floor(Number(r&&r.donuts)||0)),
+      blues:Math.max(0,Math.floor(Number(r&&r.blues)||0)),
+      when:Number(r&&r.when)||0
+    };
   }
 
   function localBoard(){try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}")||{}}catch(e){return {}}}
   function localRows(){
-    return Object.entries(localBoard()).map(([name,v])=>normalizeRow({name,...(v||{})})).filter(x=>x.name).sort((a,b)=>b.score-a.score||a.when-b.when).slice(0,200);
+    return Object.entries(localBoard()).map(([name,v])=>normalizeRow({name,...(v||{})})).filter(x=>x.name)
+      .sort((a,b)=>b.score-a.score||b.distance-a.distance||a.when-b.when).slice(0,200);
   }
   function mergeIntoLocal(rows){
     try{
@@ -35,7 +44,7 @@
         const r=normalizeRow(raw);if(!r.name)continue;
         let key=Object.keys(b).find(k=>cleanName(k).toLocaleLowerCase()===r.name.toLocaleLowerCase())||r.name;
         const prev=Number(b[key]&&b[key].score||0);
-        if(r.score>prev){b[key]={score:r.score,distance:r.distance,donuts:r.donuts,when:r.when||Date.now()};changed=true}
+        if(r.score>prev){b[key]={score:r.score,distance:r.distance,donuts:r.donuts,blues:r.blues,when:r.when||Date.now()};changed=true}
       }
       if(changed)localStorage.setItem(LOCAL_KEY,JSON.stringify(b));
     }catch(e){}
@@ -48,8 +57,7 @@
   }
 
   function scoreHtml(r){
-    const detail=(r.distance||r.donuts)?`<small>${r.distance} m · 🍩 ${r.donuts}</small>`:"";
-    return `<div class="rank-score-main">${Math.floor(r.score)} pts</div>${detail}`;
+    return `<div class="rank-score-main">${Math.floor(r.score)} pts</div><small>${r.distance} m · 🍩 ${r.donuts} · 🔵 ${r.blues}</small>`;
   }
   function draw(el,rows,limit){
     if(!el)return;
@@ -63,7 +71,7 @@
     window.__bgLastRankingOnline=true;
     const label=document.getElementById("rankingModeLabel"),sub=document.getElementById("rankingSubtitle");
     if(label)label.textContent="ONLINE";
-    if(sub)sub.textContent="Pontuação = distância percorrida + 100 pontos por rosquinha.";
+    if(sub)sub.textContent="Pontos = distância + 10 por rosquinha + 50 por cogumelo azul.";
     draw(document.getElementById("gameOverRanking"),rows,3);
     draw(document.getElementById("rankingFullList"),rows,10);
   }
@@ -86,11 +94,11 @@
     const name=cleanName(localStorage.getItem(NAME_KEY)||"");
     const m=metrics(),score=Math.max(0,Math.floor(Number(m.total)||0));
     if(!name||!score)return refresh();
-    window.__bgLastScore=score;window.__bgLastDistance=m.distance;window.__bgLastDonuts=m.donuts;
-    const sig=`${name.toLocaleLowerCase()}:${score}:${m.distance}:${m.donuts}`;
+    window.__bgLastScore=score;window.__bgLastDistance=m.distance;window.__bgLastDonuts=m.donuts;window.__bgLastBlueMushrooms=m.blues;
+    const sig=`${name.toLocaleLowerCase()}:${score}:${m.distance}:${m.donuts}:${m.blues}`;
     if(sig===lastSubmit)return refresh();lastSubmit=sig;
     try{
-      const data=await api("POST",{player:name,score,distance:m.distance,donuts:m.donuts}),rows=Array.isArray(data)?data:(data&&data.rows)||[];
+      const data=await api("POST",{player:name,score,distance:m.distance,donuts:m.donuts,blues:m.blues}),rows=Array.isArray(data)?data:(data&&data.rows)||[];
       window.__bgGlobalRows=rows.map(normalizeRow);mergeIntoLocal(rows);paint(rows);return window.__bgGlobalRows;
     }catch(e){lastSubmit="";return refresh()}
   }
