@@ -5,10 +5,13 @@
 
   const BOARD_KEY="bruno_guloso_local_board";
   const FLY_KEY="f";
+  const HOLD_MS=5000;
   const FLY_Y=82;
   const FLY_SPEED=9000; // pixels/segundo; ~12 s para atravessar a fase inteira
 
-  let flyHeld=false;
+  let keyHeld=false;
+  let holdStarted=0;
+  let flightActive=false;
   let tainted=false;
   let lastFrame=performance.now();
 
@@ -37,11 +40,17 @@
     badge.style.display="block";
   }
 
+  function stopHold(){
+    keyHeld=false;
+    holdStarted=0;
+    flightActive=false;
+    window.__bgTestFlightActive=false;
+  }
+
   function resetTest(){
-    flyHeld=false;
+    stopHold();
     tainted=false;
     window.__bgTestRun=false;
-    window.__bgTestFlightActive=false;
     badge.style.display="none";
   }
 
@@ -84,7 +93,7 @@
     }
   }catch(e){}
 
-  // Uma LevelState nova significa tentativa nova: libera ranking novamente.
+  // Uma tentativa nova libera o ranking novamente.
   function installInitializeReset(){
     try{
       if(!(window.Mario&&Mario.Character&&Mario.Character.prototype&&typeof Mario.Character.prototype.Initialize==="function"))return false;
@@ -106,52 +115,62 @@
     setTimeout(()=>clearInterval(timer),10000);
   }
 
+  // Segredo: F precisa permanecer pressionado por 5 segundos completos.
+  // Antes disso, absolutamente nada muda na partida nem no ranking.
   addEventListener("keydown",e=>{
-    if(String(e.key||"").toLowerCase()!==FLY_KEY||e.repeat||editable(e.target)||!gameActive())return;
-    flyHeld=true;
-    markTest();
-    window.__bgTestFlightActive=true;
+    if(String(e.key||"").toLowerCase()!==FLY_KEY||editable(e.target)||!gameActive())return;
+    if(!keyHeld){
+      keyHeld=true;
+      holdStarted=performance.now();
+      flightActive=false;
+    }
     e.preventDefault();
   },true);
 
   addEventListener("keyup",e=>{
     if(String(e.key||"").toLowerCase()!==FLY_KEY)return;
-    flyHeld=false;
-    window.__bgTestFlightActive=false;
+    stopHold();
     e.preventDefault();
   },true);
 
-  addEventListener("blur",()=>{flyHeld=false;window.__bgTestFlightActive=false});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){flyHeld=false;window.__bgTestFlightActive=false}});
+  addEventListener("blur",stopHold);
+  document.addEventListener("visibilitychange",()=>{if(document.hidden)stopHold()});
 
   function applyFlight(now){
     const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));
     lastFrame=now;
 
-    if(flyHeld&&gameActive()){
-      const m=character();
-      if(m){
+    if(keyHeld&&gameActive()){
+      if(!flightActive&&holdStarted>0&&now-holdStarted>=HOLD_MS){
+        flightActive=true;
         markTest();
         window.__bgTestFlightActive=true;
-        try{
-          if(m.World)m.World.Paused=false;
-          m.DeathTime=0;
-          m.WinTime=0;
-          m.InvulnerableTime=Math.max(Number(m.InvulnerableTime)||0,9999);
-          m.Xa=0;
-          m.Ya=0;
-          m.OnGround=false;
-          m.WasOnGround=false;
-          m.Y=FLY_Y;
-          m.YOld=FLY_Y;
+      }
 
-          const nextX=m.X+FLY_SPEED*dt;
-          m.X=nextX;
-          m.XOld=nextX;
-          window.__bgRunMaxX=Math.max(Number(window.__bgRunMaxX)||0,nextX);
-        }catch(e){}
+      if(flightActive){
+        const m=character();
+        if(m){
+          try{
+            if(m.World)m.World.Paused=false;
+            m.DeathTime=0;
+            m.WinTime=0;
+            m.InvulnerableTime=Math.max(Number(m.InvulnerableTime)||0,9999);
+            m.Xa=0;
+            m.Ya=0;
+            m.OnGround=false;
+            m.WasOnGround=false;
+            m.Y=FLY_Y;
+            m.YOld=FLY_Y;
+
+            const nextX=m.X+FLY_SPEED*dt;
+            m.X=nextX;
+            m.XOld=nextX;
+            window.__bgRunMaxX=Math.max(Number(window.__bgRunMaxX)||0,nextX);
+          }catch(e){}
+        }
       }
     }else{
+      flightActive=false;
       window.__bgTestFlightActive=false;
     }
 
@@ -174,8 +193,10 @@
 
   window.__bgTestFlight={
     key:"F",
+    holdSeconds:5,
     get used(){return tainted},
-    get active(){return flyHeld},
+    get active(){return flightActive},
+    get holding(){return keyHeld},
     reset:resetTest
   };
 })();
