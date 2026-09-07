@@ -1,11 +1,11 @@
 (()=>{
   "use strict";
-  if(window.__BG_SPEED_V3_LOCK__)return;
-  window.__BG_SPEED_V3_LOCK__=true;
+  if(window.__BG_SPEED_V4_LOCK__)return;
+  window.__BG_SPEED_V4_LOCK__=true;
 
-  // Leve redução horizontal adicional. Salto e gravidade permanecem intactos.
-  const GROUND=0.875;
-  const AIR=0.875;
+  // Redução horizontal adicional. Salto e gravidade permanecem intactos.
+  const GROUND=0.86;
+  const AIR=0.86;
 
   function apply(c){
     if(!c)return;
@@ -17,8 +17,8 @@
     try{
       if(!(window.Mario&&Mario.Character&&Mario.Character.prototype))return false;
       const p=Mario.Character.prototype;
-      if(p.__bgSpeedV3Lock)return true;
-      p.__bgSpeedV3Lock=true;
+      if(p.__bgSpeedV4Lock)return true;
+      p.__bgSpeedV4Lock=true;
       const init=p.Initialize;
       p.Initialize=function(){const r=init.apply(this,arguments);apply(this);return r};
       const move=p.Move;
@@ -32,5 +32,5 @@
     const timer=setInterval(()=>{if(install())clearInterval(timer)},50);
     setTimeout(()=>clearInterval(timer),10000);
   }
-  window.__bgSpeedV3={groundInertia:GROUND,airInertia:AIR};
+  window.__bgSpeedV4={groundInertia:GROUND,airInertia:AIR};
 })();
