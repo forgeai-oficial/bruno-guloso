@@ -117,7 +117,7 @@ export default {
               '<script src="/mobile-arrow-tune.js?v=1"></script>' +
               '<script src="/mobile-full-touch.js?v=4"></script>' +
               '<script src="/mobile-invisible-arrows.js?v=5"></script>' +
-              '<script src="/mushroom-tip-mark.js?v=1"></script>' +
+              '<script src="/mushroom-tip-mark.js?v=2"></script>' +
               '<script src="/test-flight.js?v=3"></script>',
               { html: true },
             );
