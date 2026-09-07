@@ -4,7 +4,7 @@
   window.__BG_MAP_EXPANSION_V1__=true;
 
   const VERSION=1;
-  const MODULE_STEP=180;
+  const MODULE_STEP=140;
   const SAFE_START=70;
   const SAFE_END=110;
   const PLATFORM_LEFT=132, PLATFORM_MID=133, PLATFORM_RIGHT=134;
@@ -45,7 +45,7 @@
   }
 
   function findFlat(level,anchor,len,fromX,toX){
-    const maxR=52;
+    const maxR=72;
     for(let r=0;r<=maxR;r++){
       const tests=r===0?[anchor]:[anchor+r,anchor-r];
       for(const x0 of tests){
@@ -60,7 +60,9 @@
 
   function canPlatform(level,x,y,len,clearBelow=false,bottomY=0){
     if(y<2||y>=level.Height-2||x<2||x+len>=level.Width-2)return false;
-    for(let i=0;i<len;i++)if(!empty(level,x+i,y)||!templateEmpty(level,x+i,y-1))return false;
+    for(let i=0;i<len;i++){
+      if(!empty(level,x+i,y)||!templateEmpty(level,x+i,y)||!templateEmpty(level,x+i,y-1))return false;
+    }
     if(clearBelow&&!verticalClear(level,x,len,y,bottomY))return false;
     return true;
   }
@@ -97,58 +99,56 @@
   }
 
   function addUpperRoute(state,level,anchor,fromX,toX){
-    const p=findFlat(level,anchor,28,fromX,toX);if(!p)return false;
-    const {x,y}=p;
-    const aY=y-3,bY=y-4,cY=y-3;
-    if(!canPlatform(level,x+2,aY,6)||!canPlatform(level,x+11,bY,7)||!canPlatform(level,x+21,cY,5))return false;
-    if(!verticalClear(level,x+2,6,aY,y)||!verticalClear(level,x+11,7,bY,y)||!verticalClear(level,x+21,5,cY,y))return false;
-    putPlatform(level,x+2,aY,6);putPlatform(level,x+11,bY,7);putPlatform(level,x+21,cY,5);
-    secret(level,x+4,aY-1,`upper:${x}:a`);secret(level,x+14,bY-1,`upper:${x}:b`);secret(level,x+23,cY-1,`upper:${x}:c`);
-    const a=auditFor(state);a.upperRoutes++;a.tilesAdded+=18;a.secretDonuts+=3;
+    const p=findFlat(level,anchor,16,fromX,toX);if(!p)return false;
+    const {x,y}=p,aY=y-3,bY=y-4,cY=y-3;
+    if(!canPlatform(level,x+1,aY,4)||!canPlatform(level,x+6,bY,5)||!canPlatform(level,x+12,cY,3))return false;
+    if(!verticalClear(level,x+1,4,aY,y)||!verticalClear(level,x+6,5,bY,y)||!verticalClear(level,x+12,3,cY,y))return false;
+    putPlatform(level,x+1,aY,4);putPlatform(level,x+6,bY,5);putPlatform(level,x+12,cY,3);
+    secret(level,x+2,aY-1,`upper:${x}:a`);secret(level,x+8,bY-1,`upper:${x}:b`);secret(level,x+13,cY-1,`upper:${x}:c`);
+    const a=auditFor(state);a.upperRoutes++;a.tilesAdded+=12;a.secretDonuts+=3;
     return true;
   }
 
   function addEnemyZone(state,level,anchor,fromX,toX){
-    const p=findFlat(level,anchor,14,fromX,toX);if(!p)return false;
-    const {x,y}=p;
-    let n=0;
-    if(placeTemplate(level,x+4,y-1,"coxinha")){auditFor(state).coxinhas++;n++}
-    if(placeTemplate(level,x+10,y-1,"refri")){auditFor(state).refris++;n++}
+    const p=findFlat(level,anchor,10,fromX,toX);if(!p)return false;
+    const {x,y}=p;let n=0;
+    if(placeTemplate(level,x+2,y-1,"coxinha")){auditFor(state).coxinhas++;n++}
+    if(placeTemplate(level,x+7,y-1,"refri")){auditFor(state).refris++;n++}
     if(!n)return false;
     const a=auditFor(state);a.enemyZones++;a.templatesAdded+=n;
     return true;
   }
 
   function addSpringZone(state,level,anchor,fromX,toX){
-    const p=findFlat(level,anchor,16,fromX,toX);if(!p)return false;
+    const p=findFlat(level,anchor,12,fromX,toX);if(!p)return false;
     const {x,y}=p;
-    if(!placeTemplate(level,x+5,y-1,"spring"))return false;
+    if(!placeTemplate(level,x+3,y-1,"spring"))return false;
     const ledgeY=y-5;
-    if(canPlatform(level,x+9,ledgeY,5)&&verticalClear(level,x+9,5,ledgeY,y)){
-      putPlatform(level,x+9,ledgeY,5);
-      secret(level,x+10,ledgeY-1,`spring:${x}:1`);secret(level,x+12,ledgeY-1,`spring:${x}:2`);
-      const a=auditFor(state);a.tilesAdded+=5;a.secretDonuts+=2;
+    if(canPlatform(level,x+7,ledgeY,4)&&verticalClear(level,x+7,4,ledgeY,y)){
+      putPlatform(level,x+7,ledgeY,4);
+      secret(level,x+8,ledgeY-1,`spring:${x}:1`);secret(level,x+9,ledgeY-1,`spring:${x}:2`);
+      const a=auditFor(state);a.tilesAdded+=4;a.secretDonuts+=2;
     }
     const a=auditFor(state);a.springs++;a.templatesAdded++;
     return true;
   }
 
   function addMovingZone(state,level,anchor,fromX,toX){
-    const p=findFlat(level,anchor,18,fromX,toX);if(!p)return false;
+    const p=findFlat(level,anchor,12,fromX,toX);if(!p)return false;
     const {x,y}=p,py=y-4;
-    if(!verticalClear(level,x+3,12,py,y))return false;
-    if(!placeTemplate(level,x+9,py,"moving",{__bgRange:30+(hash(x,44)%17),__bgPhase:(hash(x,45)%628)/100}))return false;
+    if(!verticalClear(level,x+2,8,py,y))return false;
+    if(!placeTemplate(level,x+6,py,"moving",{__bgRange:28+(hash(x,44)%15),__bgPhase:(hash(x,45)%628)/100}))return false;
     const a=auditFor(state);a.movers++;a.templatesAdded++;
     return true;
   }
 
   function addBlueSecret(state,level,anchor,fromX,toX){
-    const p=findFlat(level,anchor,18,fromX,toX);if(!p)return false;
+    const p=findFlat(level,anchor,12,fromX,toX);if(!p)return false;
     const {x,y}=p,py=y-7;
-    if(py<2||!canPlatform(level,x+6,py,6)||!verticalClear(level,x+5,8,py,y))return false;
-    putPlatform(level,x+6,py,6);
-    secret(level,x+7,py-1,`blue:${x}:1`);secret(level,x+9,py-1,`blue:${x}:2`);secret(level,x+10,py-1,`blue:${x}:3`);
-    const a=auditFor(state);a.blueSecrets++;a.tilesAdded+=6;a.secretDonuts+=3;
+    if(py<2||!canPlatform(level,x+4,py,5)||!verticalClear(level,x+3,7,py,y))return false;
+    putPlatform(level,x+4,py,5);
+    secret(level,x+5,py-1,`blue:${x}:1`);secret(level,x+7,py-1,`blue:${x}:2`);secret(level,x+8,py-1,`blue:${x}:3`);
+    const a=auditFor(state);a.blueSecrets++;a.tilesAdded+=5;a.secretDonuts+=3;
     return true;
   }
 
@@ -176,7 +176,7 @@
     const a=auditFor(state);a.ranges.push([fromX,toX]);
     const first=Math.max(SAFE_START,Math.ceil((fromX+60)/MODULE_STEP)*MODULE_STEP);
     for(let anchor=first;anchor<toX-SAFE_END;anchor+=MODULE_STEP){
-      const index=Math.floor(anchor/MODULE_STEP),kind=index%5;
+      const index=Math.floor(anchor/MODULE_STEP),kind=(index+4)%5;
       if(kind===0)addUpperRoute(state,level,anchor,fromX,toX);
       else if(kind===1)addEnemyZone(state,level,anchor,fromX,toX);
       else if(kind===2)addSpringZone(state,level,anchor,fromX,toX);
