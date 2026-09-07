@@ -99,6 +99,7 @@
       drawSprites(st,cam,1);
       drawExtraCollectibles(st,cam);
       if(typeof st.Layer.DrawExit1==="function")st.Layer.DrawExit1(ctx,cam);
+      try{window.__bgMushroomFinalMark&&window.__bgMushroomFinalMark.drawViewport(ctx,st,cam)}catch(e){}
     }catch(e){}finally{
       st.Layer.Width=oldLayerW;
       for(let i=0;i<st.BgLayer.length;i++)if(st.BgLayer[i]&&oldBgW[i]!=null)st.BgLayer[i].Width=oldBgW[i];
