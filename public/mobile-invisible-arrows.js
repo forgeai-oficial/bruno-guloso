@@ -1,13 +1,13 @@
 (()=>{
   "use strict";
-  if(window.__BG_MOBILE_INVISIBLE_ARROWS_V3__)return;
-  window.__BG_MOBILE_INVISIBLE_ARROWS_V3__=true;
+  if(window.__BG_MOBILE_INVISIBLE_ARROWS_V4__)return;
+  window.__BG_MOBILE_INVISIBLE_ARROWS_V4__=true;
 
   const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=1100;
   const isLandscape=()=>innerWidth>innerHeight;
 
   const style=document.createElement("style");
-  style.id="bgInvisibleArrowStyleV3";
+  style.id="bgInvisibleArrowStyleV4";
   style.textContent=`
     .bgInvisibleArrowPad{
       position:fixed!important;
@@ -49,10 +49,9 @@
     return b;
   }
 
-  // ← mantém somente a área extra já existente acima.
   const leftTop=makePad(-1,"Mover para trás - área extra superior");
 
-  // → forma um bloco 2x2 sem frestas:
+  // → bloco 2x2 sem frestas:
   // [ invisível topo-esquerda ][ invisível topo-direita ]
   // [ botão visível →         ][ invisível baixo-direita ]
   const rightTopLeft=makePad(1,"Mover para frente - superior esquerda");
@@ -126,31 +125,35 @@
         const r=right.getBoundingClientRect();
         if(r.width&&r.height){
           const w=r.width,h=r.height;
-          const overlap=2; // elimina qualquer fresta/subpixel entre os 4 quadrados
+          const overlap=2;
 
           setBox(rightTopLeft,r.left,r.top-h,w+overlap,h+overlap);
           setBox(rightBottomRight,r.right-overlap,r.top,w+overlap,h);
           setBox(rightTopRight,r.right-overlap,r.top-h,w+overlap,h+overlap);
 
-          forwardRect={
-            left:r.left,
-            top:r.top-h,
-            right:r.left+w*2,
-            bottom:r.top+h
-          };
+          forwardRect={left:r.left,top:r.top-h,right:r.left+w*2,bottom:r.top+h};
         }
       }
     }else{
       forwardRect=null;
-      pressed.clear();
-      setDir(0);
+      // IMPORTANT: never clear desktop keyboard movement merely because
+      // this mobile-only layer is inactive. Only release a direction if
+      // one of these invisible mobile pads was actually held.
+      if(pressed.size){
+        pressed.clear();
+        setDir(0);
+      }
     }
     requestAnimationFrame(sync);
   }
   requestAnimationFrame(sync);
 
-  addEventListener("blur",()=>{pressed.clear();setDir(0)});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){pressed.clear();setDir(0)}});
+  addEventListener("blur",()=>{
+    if(pressed.size){pressed.clear();setDir(0)}
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden&&pressed.size){pressed.clear();setDir(0)}
+  });
 
   window.__bgInvisibleArrows={
     leftTop,
