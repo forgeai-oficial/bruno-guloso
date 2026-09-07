@@ -7,7 +7,17 @@ export class Leaderboard extends DurableObject {
 
   normalizeScore(value) {
     const n = Math.floor(Number(value) || 0);
+    return Math.max(0, Math.min(10000000, n));
+  }
+
+  normalizeDistance(value) {
+    const n = Math.floor(Number(value) || 0);
     return Math.max(0, Math.min(1000000, n));
+  }
+
+  normalizeDonuts(value) {
+    const n = Math.floor(Number(value) || 0);
+    return Math.max(0, Math.min(100000, n));
   }
 
   sortBoard(board) {
@@ -15,10 +25,12 @@ export class Leaderboard extends DurableObject {
       .map((r) => ({
         name: this.cleanName(r && r.name),
         score: this.normalizeScore(r && r.score),
+        distance: this.normalizeDistance(r && r.distance),
+        donuts: this.normalizeDonuts(r && r.donuts),
         when: Number(r && r.when) || 0,
       }))
       .filter((r) => r.name)
-      .sort((a, b) => b.score - a.score || a.when - b.when)
+      .sort((a, b) => b.score - a.score || b.distance - a.distance || b.donuts - a.donuts || a.when - b.when)
       .slice(0, 200);
   }
 
@@ -37,11 +49,13 @@ export class Leaderboard extends DurableObject {
     for (const raw of incoming.slice(0, 200)) {
       const name = this.cleanName(raw && (raw.player ?? raw.name));
       const score = this.normalizeScore(raw && raw.score);
+      const distance = this.normalizeDistance(raw && raw.distance);
+      const donuts = this.normalizeDonuts(raw && raw.donuts);
       if (!name) continue;
       const key = name.toLocaleLowerCase();
       const prev = board[key];
       if (!prev || score > Number(prev.score || 0)) {
-        board[key] = { name, score, when: Date.now() };
+        board[key] = { name, score, distance, donuts, when: Date.now() };
         changed = true;
       }
     }
@@ -107,18 +121,18 @@ export default {
               '<script src="/no-timeout.js?v=1"></script>' +
               '<script src="/ranking-pro.js?v=3"></script>' +
               '<script src="/landing-pro.js?v=4"></script>' +
-              '<script src="/global-ranking.js?v=1"></script>' +
+              '<script src="/global-ranking.js?v=2"></script>' +
               '<script src="/mobile-responsive.js?v=4"></script>' +
               '<script src="/mobile-controls.js?v=4"></script>' +
               '<script src="/finish-pro.js?v=1"></script>' +
               '<script src="/orientation-game-only.js?v=2"></script>' +
               '<script src="/mobile-static-fit.js?v=1"></script>' +
-              '<script src="/mobile-side-viewport.js?v=3"></script>' +
+              '<script src="/mobile-side-viewport.js?v=4"></script>' +
               '<script src="/mobile-arrow-tune.js?v=1"></script>' +
               '<script src="/mobile-full-touch.js?v=4"></script>' +
               '<script src="/mobile-invisible-arrows.js?v=5"></script>' +
-              '<script src="/mushroom-tip-mark.js?v=3"></script>' +
-              '<script src="/donut-score-powerup.js?v=2"></script>' +
+              '<script src="/mushroom-tip-mark.js?v=4"></script>' +
+              '<script src="/donut-score-powerup.js?v=3"></script>' +
               '<script src="/test-flight.js?v=3"></script>',
               { html: true },
             );
