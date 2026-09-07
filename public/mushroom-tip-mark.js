@@ -1,7 +1,7 @@
 (()=>{
   "use strict";
-  if(window.__BG_MUSHROOM_TIP_MARK__)return;
-  window.__BG_MUSHROOM_TIP_MARK__=true;
+  if(window.__BG_MUSHROOM_TIP_MARK_V2__)return;
+  window.__BG_MUSHROOM_TIP_MARK_V2__=true;
 
   function install(){
     try{
@@ -9,7 +9,7 @@
       const proto=Mario.Mushroom.prototype;
       const original=proto.Draw;
       if(typeof original!=="function")return false;
-      if(original.__bgTipMarkWrapped)return true;
+      if(original.__bgTipMarkV2Wrapped)return true;
 
       const wrapped=function(ctx){
         original.apply(this,arguments);
@@ -18,14 +18,13 @@
           const x=((this.XOld+(this.X-this.XOld)*this.Delta)|0)-this.XPicO;
           const y=((this.YOld+(this.Y-this.YOld)*this.Delta)|0)-this.YPicO;
           ctx.save();
-          ctx.fillStyle="rgba(73,24,58,.95)";
-          // Risquinho vertical minúsculo: 1 px de largura x 2 px de altura,
-          // exatamente no centro do topo do cogumelo.
-          ctx.fillRect(Math.round(x+8),Math.round(y+1),1,2);
+          ctx.fillStyle="rgba(77,20,56,.98)";
+          // O sprite real do cogumelo começa no y+3. O risco entra na própria ponta.
+          ctx.fillRect(Math.round(x+8),Math.round(y+3),1,3);
           ctx.restore();
         }catch(e){}
       };
-      wrapped.__bgTipMarkWrapped=true;
+      wrapped.__bgTipMarkV2Wrapped=true;
       wrapped.__bgOriginal=original;
       proto.Draw=wrapped;
       return true;
