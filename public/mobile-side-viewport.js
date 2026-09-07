@@ -66,6 +66,15 @@
     ctx.restore();
   }
 
+  function drawExtraCollectibles(st,cam){
+    const api=window.__bgCollectibles;
+    if(!api||typeof api.drawWorld!=="function")return;
+    ctx.save();
+    ctx.translate(-cam.X,-cam.Y);
+    try{api.drawWorld(ctx,st)}catch(e){}
+    ctx.restore();
+  }
+
   function render(){
     const active=document.body.classList.contains("bg-game-active");
     if(!active||!isMobile()||!isLandscape()||window.__bgOrientationBlocked){requestAnimationFrame(render);return;}
@@ -88,6 +97,7 @@
       st.Layer.Draw(ctx,cam);
       if(typeof st.Layer.DrawExit0==="function")st.Layer.DrawExit0(ctx,cam,!(window.Mario&&Mario.MarioCharacter&&Mario.MarioCharacter.WinTime));
       drawSprites(st,cam,1);
+      drawExtraCollectibles(st,cam);
       if(typeof st.Layer.DrawExit1==="function")st.Layer.DrawExit1(ctx,cam);
     }catch(e){}finally{
       st.Layer.Width=oldLayerW;
