@@ -4,7 +4,7 @@
   window.__BG_MOBILE_CONTROLS__=true;
 
   const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=1100;
-  const isLandscape=()=>window.innerWidth>window.innerHeight;
+  const isLandscape=()=>window.innerWidth>window.innerHeight||window.__bgLandscapeSessionActive===true;
 
   const style=document.createElement("style");
   style.textContent=`
