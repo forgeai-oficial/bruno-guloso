@@ -113,7 +113,8 @@ export default {
               '<script src="/finish-pro.js?v=1"></script>' +
               '<script src="/orientation-game-only.js?v=1"></script>' +
               '<script src="/mobile-static-fit.js?v=1"></script>' +
-              '<script src="/mobile-side-viewport.js?v=1"></script>',
+              '<script src="/mobile-side-viewport.js?v=1"></script>' +
+              '<script src="/mobile-arrow-tune.js?v=1"></script>',
               { html: true },
             );
           },
