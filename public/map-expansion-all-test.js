@@ -5,7 +5,7 @@
   if(window.__BG_ALL_MECHANICS_TEST_V1__)return;
   window.__BG_ALL_MECHANICS_TEST_V1__=true;
 
-  const TEST_START=600;
+  const TEST_START=200;
   const TEST_END=1500;
   const SOLID=145;
   const PLATFORM_LEFT=132,PLATFORM_MID=133,PLATFORM_RIGHT=134;
@@ -18,11 +18,11 @@
     "Mini arena curta","Segredo do cogumelo azul","Alcova alta","Atalho quebrando teto","Corrida azul",
     "Escada de blocos secretos","Cano com monstro","Lançador de comida","Sala bônus real","Rampas reais","Scroll vertical"
   ];
-  const anchors=Array.from({length:36},(_,i)=>612+i*24);
+  const anchors=Array.from({length:36},(_,i)=>212+i*35);
 
   const badge=document.createElement("div");
   badge.id="bgAllTestBadge";
-  badge.textContent="TESTE • 36 MECÂNICAS • 0–600 ORIGINAL";
+  badge.textContent="TESTE • 36 MECÂNICAS • 0–200 ORIGINAL";
   Object.assign(badge.style,{position:"fixed",left:"50%",top:"4px",transform:"translateX(-50%)",zIndex:"500",padding:"4px 8px",borderRadius:"8px",background:"rgba(10,15,30,.78)",border:"1px solid rgba(255,255,255,.28)",font:"800 10px/1.1 Inter,system-ui,sans-serif",color:"#fff",pointerEvents:"none",display:"none"});
   document.body.appendChild(badge);
   const style=document.createElement("style");
@@ -153,7 +153,7 @@
     placeFeature(state,34,a=>{const p=flat(a,10);return p&&placeTemplate(l,p.x+5,p.y-1,"bonusPipe")});
     placeFeature(state,35,a=>{const p=flat(a,14);if(!p)return false;const r1=placeTemplate(l,p.x+4,p.y-1,"rampUp"),r2=placeTemplate(l,p.x+9,p.y-3,"rampDown");return r1||r2});
     markFeature(state,36,true,"scroll vertical dentro da sala bônus #34");
-    syncDonuts(state);audit(state).prepared=true;badge.textContent=`TESTE • ${audit(state).features.filter(f=>f.ok).length}/36 MECÂNICAS • 0–600 ORIGINAL`;
+    syncDonuts(state);audit(state).prepared=true;badge.textContent=`TESTE • ${audit(state).features.filter(f=>f.ok).length}/36 MECÂNICAS • 0–200 ORIGINAL`;
   }
 
   function updateHidden(state){const m=Mario.MarioCharacter,l=state.Level;if(!m||!l)return;const headY=m.Y-m.Height;for(const h of state.__bgTestHidden||[]){if(h.active)continue;if(m.Ya<0&&Math.abs(m.X-(h.x*16+8))<11&&headY<=h.y*16+16&&headY>=h.y*16-8){h.active=true;l.SetBlock(h.x,h.y,4);awardDonut(state,h.x*16+8,h.y*16)}}const stairs=state.__bgTestSecretStairs||[];for(const h of stairs){if(h.active)continue;if(h.index>0&&!stairs[h.index-1].active)continue;if(m.Ya<0&&Math.abs(m.X-(h.x*16+8))<11&&headY<=h.y*16+16&&headY>=h.y*16-8){h.active=true;l.SetBlock(h.x,h.y,4);awardDonut(state,h.x*16+8,h.y*16)}}}
