@@ -339,7 +339,7 @@ export default {
               '<script src="/mobile-full-touch.js?v=4"></script>' +
               '<script src="/mobile-invisible-arrows.js?v=5"></script>' +
               '<script src="/mushroom-tip-mark.js?v=9"></script>' +
-              '<script src="/map-test-visual-v2.js?v=2"></script>' +
+              '<script src="/map-test-visual-v2.js?v=3"></script>' +
               '<script src="/donut-score-powerup.js?v=3"></script>' +
               '<script src="/donut-touch-fix.js?v=2"></script>' +
               '<script src="/blue-brick-score-v4.js?v=2"></script>' +
