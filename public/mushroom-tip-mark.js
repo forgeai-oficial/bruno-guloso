@@ -171,10 +171,11 @@
 
 (()=>{
   "use strict";
-  if(window.__BG_MAP_EXPANSION_LOADER_V1__)return;
-  window.__BG_MAP_EXPANSION_LOADER_V1__=true;
+  if(window.__BG_MAP_EXPANSION_LOADER_V2__)return;
+  window.__BG_MAP_EXPANSION_LOADER_V2__=true;
+  const allTest=new URLSearchParams(location.search).get("test")==="all";
   const s=document.createElement("script");
-  s.src="/map-expansion-v1.js?v=1";
+  s.src=allTest?"/map-expansion-all-test.js?v=1":"/map-expansion-v1.js?v=1";
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();
