@@ -16,6 +16,7 @@
   style.id="bgLandscapeSessionStyle";
   style.textContent=`
     @media (max-width:1100px),(pointer:coarse){
+      body.bg-game-active #bgRotateHint{display:none!important}
       body.bg-game-active.bg-css-landscape{
         position:fixed!important;
         left:0!important;top:0!important;
@@ -35,10 +36,7 @@
         height:min(100vw,calc(100vh * 3 / 4))!important;
         max-width:100vh!important;max-height:100vw!important;
       }
-      body.bg-game-active.bg-css-landscape .game-hud{
-        max-width:calc(100vh - 165px)!important;
-      }
-      body.bg-game-active.bg-css-landscape #bgRotateHint{display:none!important}
+      body.bg-game-active.bg-css-landscape .game-hud{max-width:calc(100vh - 165px)!important}
     }
   `;
   document.head.appendChild(style);
@@ -58,11 +56,8 @@
     const cssRotate=!physicalLandscape();
     document.body.classList.toggle("bg-css-landscape",cssRotate);
     clearOrientationBlock();
-    if(cssRotate){
-      document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerWidth)+"px");
-    }else{
-      document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerHeight)+"px");
-    }
+    if(cssRotate)document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerWidth)+"px");
+    else document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerHeight)+"px");
   }
 
   async function requestLandscapeLock(){
@@ -104,9 +99,7 @@
     window.__bgOrientationBlocked=false;
     document.documentElement.style.setProperty("--bg-app-h",Math.max(1,innerHeight)+"px");
     try{if(screen.orientation&&typeof screen.orientation.unlock==="function")screen.orientation.unlock()}catch(e){}
-    if(fullscreenOwned&&document.fullscreenElement){
-      try{await document.exitFullscreen()}catch(e){}
-    }
+    if(fullscreenOwned&&document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}
     fullscreenOwned=false;
   }
 
@@ -119,9 +112,7 @@
       if(!session)beginSession(false);
       clearOrientationBlock();
       applyFallback();
-    }else{
-      endSession();
-    }
+    }else endSession();
   }
 
   if(startBtn)startBtn.addEventListener("click",()=>beginSession(true),{capture:true});
@@ -131,7 +122,6 @@
   if(window.visualViewport)window.visualViewport.addEventListener("resize",()=>setTimeout(sync,0),{passive:true});
   document.addEventListener("fullscreenchange",()=>setTimeout(()=>{if(session)requestLandscapeLock();sync()},40));
 
-  // Enquanto a partida estiver ativa, nenhum script antigo pode reabrir o aviso de rotação.
   function enforce(){
     if(session&&gameActive()){
       clearOrientationBlock();
@@ -142,9 +132,5 @@
   requestAnimationFrame(enforce);
   setTimeout(sync,0);
 
-  window.__bgLandscapeSession={
-    get active(){return session},
-    lock:()=>beginSession(true),
-    unlock:endSession
-  };
+  window.__bgLandscapeSession={get active(){return session},lock:()=>beginSession(true),unlock:endSession};
 })();
