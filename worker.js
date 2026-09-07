@@ -343,7 +343,7 @@ export default {
               '<script src="/donut-touch-fix.js?v=2"></script>' +
               '<script src="/blue-brick-score-v4.js?v=2"></script>' +
               '<script src="/composite-score-ui.js?v=2"></script>' +
-              '<script src="/speed-v1-lock.js?v=3"></script>' +
+              '<script src="/speed-v1-lock.js?v=4"></script>' +
               '<script src="/access-analytics.js?v=1"></script>' +
               '<script src="/test-flight.js?v=3"></script>',
               { html: true },
