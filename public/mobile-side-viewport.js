@@ -70,7 +70,7 @@
     const api=window.__bgCollectibles;
     if(!api||typeof api.drawWorld!=="function")return;
     ctx.save();
-    ctx.translate(-cam.X,-cam.Y);
+    ctx.translate(-Math.round(Number(cam.X||0)),-Math.round(Number(cam.Y||0)));
     try{api.drawWorld(ctx,st)}catch(e){}
     ctx.restore();
   }
