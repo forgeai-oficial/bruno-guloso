@@ -109,14 +109,15 @@ export default {
               '<script src="/landing-pro.js?v=4"></script>' +
               '<script src="/global-ranking.js?v=1"></script>' +
               '<script src="/mobile-responsive.js?v=4"></script>' +
-              '<script src="/mobile-controls.js?v=3"></script>' +
+              '<script src="/mobile-controls.js?v=4"></script>' +
               '<script src="/finish-pro.js?v=1"></script>' +
-              '<script src="/orientation-game-only.js?v=1"></script>' +
+              '<script src="/orientation-game-only.js?v=2"></script>' +
               '<script src="/mobile-static-fit.js?v=1"></script>' +
-              '<script src="/mobile-side-viewport.js?v=1"></script>' +
+              '<script src="/mobile-side-viewport.js?v=2"></script>' +
               '<script src="/mobile-arrow-tune.js?v=1"></script>' +
-              '<script src="/mobile-full-touch.js?v=3"></script>' +
-              '<script src="/mobile-invisible-arrows.js?v=4"></script>' +
+              '<script src="/mobile-full-touch.js?v=4"></script>' +
+              '<script src="/mobile-invisible-arrows.js?v=5"></script>' +
+              '<script src="/mushroom-tip-mark.js?v=1"></script>' +
               '<script src="/test-flight.js?v=3"></script>',
               { html: true },
             );
