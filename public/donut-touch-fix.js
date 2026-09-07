@@ -1,9 +1,9 @@
 (()=>{
   "use strict";
-  if(window.__BG_DONUT_TOUCH_FIX_V1__)return;
-  window.__BG_DONUT_TOUCH_FIX_V1__=true;
+  if(window.__BG_DONUT_TOUCH_FIX_V2__)return;
+  window.__BG_DONUT_TOUCH_FIX_V2__=true;
 
-  const DONUT_POINTS=100;
+  const DONUT_POINTS=10;
   const RADIUS_X=7;
   const RADIUS_Y=7;
 
@@ -38,13 +38,15 @@
 
   function refreshHud(data){
     try{
+      const donuts=Math.max(0,Math.floor(Number(data.donuts)||0));
+      const points=donuts*DONUT_POINTS;
       const hud=document.getElementById("bgDonutScoreHud");
-      if(hud)hud.textContent=`🍩 ${data.donuts} · +${String(data.score).padStart(5,"0")}`;
+      if(hud)hud.textContent=`🍩 ${donuts} · +${points}`;
       const distance=Math.max(0,Math.floor((Number(window.__bgRunMaxX)||Number(player()?.X)||0)/16));
       window.__bgLastDistance=distance;
-      window.__bgLastDonuts=data.donuts;
-      window.__bgLastDonutPoints=data.score;
-      window.__bgCompositeScore=distance+data.score;
+      window.__bgLastDonuts=donuts;
+      window.__bgLastDonutPoints=points;
+      window.__bgDonutScore=points;
     }catch(e){}
   }
 
@@ -52,10 +54,10 @@
     if(item.taken)return;
     item.taken=true;
     data.donuts=Math.max(0,Math.floor(Number(data.donuts)||0))+1;
-    data.score=Math.max(0,Math.floor(Number(data.score)||0))+DONUT_POINTS;
+    data.score=data.donuts*DONUT_POINTS;
     window.__bgDonutsCollected=data.donuts;
     window.__bgDonutScore=data.score;
-    try{data.effects&&data.effects.push({x:item.x,y:item.y,text:"+100",kind:"donut",life:620,max:620})}catch(e){}
+    try{data.effects&&data.effects.push({x:item.x,y:item.y,text:"+10",kind:"donut",life:620,max:620})}catch(e){}
     playCoin();
     try{
       if(window.Mario&&Mario.Sparkle&&state&&typeof state.AddSprite==="function"){
@@ -79,8 +81,8 @@
     try{
       if(!(window.Mario&&Mario.LevelState&&Mario.LevelState.prototype&&typeof Mario.LevelState.prototype.Update==="function"))return false;
       const p=Mario.LevelState.prototype;
-      if(p.__bgDonutTouchFixV1)return true;
-      p.__bgDonutTouchFixV1=true;
+      if(p.__bgDonutTouchFixV2)return true;
+      p.__bgDonutTouchFixV2=true;
       const original=p.Update;
       p.Update=function(){
         const r=original.apply(this,arguments);
@@ -96,5 +98,5 @@
     setTimeout(()=>clearInterval(timer),10000);
   }
 
-  window.__bgDonutTouchFix={radiusX:RADIUS_X,radiusY:RADIUS_Y,swept:true};
+  window.__bgDonutTouchFix={radiusX:RADIUS_X,radiusY:RADIUS_Y,swept:true,pointsPerDonut:DONUT_POINTS};
 })();
