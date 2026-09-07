@@ -108,7 +108,7 @@ export default {
               '<script src="/ranking-pro.js?v=3"></script>' +
               '<script src="/landing-pro.js?v=4"></script>' +
               '<script src="/global-ranking.js?v=1"></script>' +
-              '<script src="/mobile-responsive.js?v=1"></script>',
+              '<script src="/mobile-responsive.js?v=2"></script>',
               { html: true },
             );
           },
