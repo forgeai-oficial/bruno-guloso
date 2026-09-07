@@ -7,7 +7,7 @@ export class Leaderboard extends DurableObject {
 
   normalizeScore(value) {
     const n = Math.floor(Number(value) || 0);
-    return Math.max(0, Math.min(10000000, n));
+    return Math.max(0, Math.min(1000000, n));
   }
 
   normalizeDistance(value) {
@@ -20,6 +20,11 @@ export class Leaderboard extends DurableObject {
     return Math.max(0, Math.min(100000, n));
   }
 
+  normalizeBlues(value) {
+    const n = Math.floor(Number(value) || 0);
+    return Math.max(0, Math.min(10000, n));
+  }
+
   sortBoard(board) {
     return Object.values(board || {})
       .map((r) => ({
@@ -27,20 +32,21 @@ export class Leaderboard extends DurableObject {
         score: this.normalizeScore(r && r.score),
         distance: this.normalizeDistance(r && r.distance),
         donuts: this.normalizeDonuts(r && r.donuts),
+        blues: this.normalizeBlues(r && r.blues),
         when: Number(r && r.when) || 0,
       }))
       .filter((r) => r.name)
-      .sort((a, b) => b.score - a.score || b.distance - a.distance || b.donuts - a.donuts || a.when - b.when)
+      .sort((a, b) => b.score - a.score || b.distance - a.distance || b.donuts - a.donuts || b.blues - a.blues || a.when - b.when)
       .slice(0, 200);
   }
 
   async getRows() {
-    const board = (await this.ctx.storage.get("board")) || {};
+    const board = (await this.ctx.storage.get("board_v2")) || {};
     return this.sortBoard(board).slice(0, 20);
   }
 
   async submit(payload) {
-    const board = (await this.ctx.storage.get("board")) || {};
+    const board = (await this.ctx.storage.get("board_v2")) || {};
     const incoming = Array.isArray(payload && payload.scores)
       ? payload.scores
       : [payload || {}];
@@ -51,11 +57,12 @@ export class Leaderboard extends DurableObject {
       const score = this.normalizeScore(raw && raw.score);
       const distance = this.normalizeDistance(raw && raw.distance);
       const donuts = this.normalizeDonuts(raw && raw.donuts);
+      const blues = this.normalizeBlues(raw && raw.blues);
       if (!name) continue;
       const key = name.toLocaleLowerCase();
       const prev = board[key];
       if (!prev || score > Number(prev.score || 0)) {
-        board[key] = { name, score, distance, donuts, when: Date.now() };
+        board[key] = { name, score, distance, donuts, blues, when: Date.now() };
         changed = true;
       }
     }
@@ -65,7 +72,7 @@ export class Leaderboard extends DurableObject {
       for (const row of this.sortBoard(board).slice(0, 200)) {
         trimmed[row.name.toLocaleLowerCase()] = row;
       }
-      await this.ctx.storage.put("board", trimmed);
+      await this.ctx.storage.put("board_v2", trimmed);
       return this.sortBoard(trimmed).slice(0, 20);
     }
 
@@ -121,7 +128,7 @@ export default {
               '<script src="/no-timeout.js?v=1"></script>' +
               '<script src="/ranking-pro.js?v=3"></script>' +
               '<script src="/landing-pro.js?v=4"></script>' +
-              '<script src="/global-ranking.js?v=2"></script>' +
+              '<script src="/global-ranking.js?v=3"></script>' +
               '<script src="/mobile-responsive.js?v=4"></script>' +
               '<script src="/mobile-controls.js?v=4"></script>' +
               '<script src="/finish-pro.js?v=1"></script>' +
@@ -133,8 +140,9 @@ export default {
               '<script src="/mobile-invisible-arrows.js?v=5"></script>' +
               '<script src="/mushroom-tip-mark.js?v=5"></script>' +
               '<script src="/donut-score-powerup.js?v=3"></script>' +
-              '<script src="/donut-touch-fix.js?v=1"></script>' +
-              '<script src="/composite-score-ui.js?v=1"></script>' +
+              '<script src="/donut-touch-fix.js?v=2"></script>' +
+              '<script src="/blue-brick-score-v4.js?v=1"></script>' +
+              '<script src="/composite-score-ui.js?v=2"></script>' +
               '<script src="/test-flight.js?v=3"></script>',
               { html: true },
             );
