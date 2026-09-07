@@ -4,7 +4,7 @@
   window.__BG_MOBILE_INVISIBLE_ARROWS_V4__=true;
 
   const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=1100;
-  const isLandscape=()=>innerWidth>innerHeight;
+  const isLandscape=()=>innerWidth>innerHeight||window.__bgLandscapeSessionActive===true;
 
   const style=document.createElement("style");
   style.id="bgInvisibleArrowStyleV4";
@@ -50,10 +50,6 @@
   }
 
   const leftTop=makePad(-1,"Mover para trás - área extra superior");
-
-  // → bloco 2x2 sem frestas:
-  // [ invisível topo-esquerda ][ invisível topo-direita ]
-  // [ botão visível →         ][ invisível baixo-direita ]
   const rightTopLeft=makePad(1,"Mover para frente - superior esquerda");
   const rightBottomRight=makePad(1,"Mover para frente - inferior direita");
   const rightTopRight=makePad(1,"Mover para frente - superior direita");
@@ -84,12 +80,10 @@
   function bind(pad,dir){
     pad.addEventListener("pointerdown",e=>{
       if(e.pointerType==="mouse"||!active())return;
-      pressed.set(pad,dir);
-      setDir(dir);
+      pressed.set(pad,dir);setDir(dir);
       try{navigator.vibrate&&navigator.vibrate(6)}catch(err){}
       try{pad.setPointerCapture(e.pointerId)}catch(err){}
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault();e.stopPropagation();
     },{passive:false});
     ["pointerup","pointercancel","lostpointercapture"].forEach(type=>pad.addEventListener(type,e=>{
       releasePad(pad);
@@ -98,72 +92,41 @@
     },{passive:false}));
   }
 
-  bind(leftTop,-1);
-  bind(rightTopLeft,1);
-  bind(rightBottomRight,1);
-  bind(rightTopRight,1);
+  bind(leftTop,-1);bind(rightTopLeft,1);bind(rightBottomRight,1);bind(rightTopRight,1);
 
   function setBox(pad,left,top,w,h){
-    pad.style.left=left+"px";
-    pad.style.top=top+"px";
-    pad.style.width=w+"px";
-    pad.style.height=h+"px";
+    pad.style.left=left+"px";pad.style.top=top+"px";pad.style.width=w+"px";pad.style.height=h+"px";
   }
 
   let forwardRect=null;
   function sync(){
     const left=document.querySelector('footer [data-key="left"]');
     const right=document.querySelector('footer [data-key="right"]');
-
     if(active()){
       if(left){
         const l=left.getBoundingClientRect();
         if(l.width&&l.height)setBox(leftTop,l.left,l.top-l.height,l.width,l.height+2);
       }
-
       if(right){
         const r=right.getBoundingClientRect();
         if(r.width&&r.height){
-          const w=r.width,h=r.height;
-          const overlap=2;
-
+          const w=r.width,h=r.height,overlap=2;
           setBox(rightTopLeft,r.left,r.top-h,w+overlap,h+overlap);
           setBox(rightBottomRight,r.right-overlap,r.top,w+overlap,h);
           setBox(rightTopRight,r.right-overlap,r.top-h,w+overlap,h+overlap);
-
           forwardRect={left:r.left,top:r.top-h,right:r.left+w*2,bottom:r.top+h};
         }
       }
     }else{
       forwardRect=null;
-      // IMPORTANT: never clear desktop keyboard movement merely because
-      // this mobile-only layer is inactive. Only release a direction if
-      // one of these invisible mobile pads was actually held.
-      if(pressed.size){
-        pressed.clear();
-        setDir(0);
-      }
+      if(pressed.size){pressed.clear();setDir(0)}
     }
     requestAnimationFrame(sync);
   }
   requestAnimationFrame(sync);
 
-  addEventListener("blur",()=>{
-    if(pressed.size){pressed.clear();setDir(0)}
-  });
-  document.addEventListener("visibilitychange",()=>{
-    if(document.hidden&&pressed.size){pressed.clear();setDir(0)}
-  });
+  addEventListener("blur",()=>{if(pressed.size){pressed.clear();setDir(0)}});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&pressed.size){pressed.clear();setDir(0)}});
 
-  window.__bgInvisibleArrows={
-    leftTop,
-    rightTopLeft,
-    rightBottomRight,
-    rightTopRight,
-    get forwardRect(){return forwardRect},
-    containsForward(x,y){
-      const r=forwardRect;
-      return !!r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
-    }
-  };
+  window.__bgInvisibleArrows={leftTop,rightTopLeft,rightBottomRight,rightTopRight,get forwardRect(){return forwardRect},containsForward(x,y){const r=forwardRect;return !!r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}};
 })();
