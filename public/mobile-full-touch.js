@@ -1,12 +1,13 @@
 (()=>{
   "use strict";
-  if(window.__BG_MOBILE_FULL_TOUCH__)return;
-  window.__BG_MOBILE_FULL_TOUCH__=true;
+  if(window.__BG_MOBILE_FULL_TOUCH_V2__)return;
+  window.__BG_MOBILE_FULL_TOUCH_V2__=true;
 
   const isMobile=()=>matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0||innerWidth<=1100;
   const isLandscape=()=>innerWidth>innerHeight;
 
   const style=document.createElement("style");
+  style.id="bgFullTouchStyleV2";
   style.textContent=`
     @media (max-width:1100px),(pointer:coarse){
       #bgFullTouchSurface{
@@ -18,6 +19,7 @@
         touch-action:none;
         -webkit-user-select:none;
         user-select:none;
+        -webkit-touch-callout:none;
         -webkit-tap-highlight-color:transparent;
       }
       body.bg-game-active:not(.bg-orientation-blocked) #bgFullTouchSurface{display:block}
@@ -31,80 +33,87 @@
   `;
   document.head.appendChild(style);
 
-  const surface=document.createElement("div");
-  surface.id="bgFullTouchSurface";
-  document.body.appendChild(surface);
+  let surface=document.getElementById("bgFullTouchSurface");
+  if(!surface){
+    surface=document.createElement("div");
+    surface.id="bgFullTouchSurface";
+    document.body.appendChild(surface);
+  }
 
-  let movePointer=null;
-  let jumpPointer=null;
-  let originX=0;
-  let originY=0;
+  let jumpPointers=new Set();
+  let touchJumpCount=0;
 
   const controls=()=>window.__bgMobileControls||null;
-  const active=()=>document.body.classList.contains("bg-game-active")&&isMobile()&&isLandscape()&&!window.__bgOrientationBlocked&&!window.__bgGameOverActive&&!window.__bgVictoryActive;
+  const active=()=>document.body.classList.contains("bg-game-active")&&isMobile()&&isLandscape()&&!window.__bgOrientationBlocked&&!window.__bgGameOverActive&&!window.__bgVictoryActive&&!window.__bgPaused;
+
+  function setJump(on){
+    const c=controls();
+    if(c&&typeof c.setJump==="function"){
+      c.setJump(!!on);
+      return;
+    }
+    try{
+      if(window.Enjine&&Enjine.KeyboardInput&&Enjine.KeyboardInput.Pressed){
+        window.__jo2JumpHeld=!!on;
+        Enjine.KeyboardInput.Pressed[Enjine.Keys.S]=!!on;
+        if(!on)window.__jo2JumpNeedsRearm=false;
+      }
+    }catch(e){}
+  }
 
   function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
-
-  function stopMove(){
-    if(movePointer!==null){
-      movePointer=null;
-      const c=controls();
-      if(c&&c.setDir)c.setDir(0);
-    }
+  function beginJump(){
+    if(!active())return false;
+    setJump(true);
+    vibrate(7);
+    return true;
+  }
+  function releaseIfDone(){
+    if(jumpPointers.size===0&&touchJumpCount===0)setJump(false);
+  }
+  function releaseAll(){
+    jumpPointers.clear();
+    touchJumpCount=0;
+    setJump(false);
   }
 
-  function stopJump(){
-    if(jumpPointer!==null){
-      jumpPointer=null;
-      const c=controls();
-      if(c&&c.setJump)c.setJump(false);
-    }
-  }
-
-  function releaseAll(){stopMove();stopJump();}
-
+  // Pointer Events: any free gameplay touch jumps. Movement remains on the buttons.
   surface.addEventListener("pointerdown",e=>{
-    if(!active()||e.pointerType==="mouse")return;
-    const c=controls();
-    if(!c)return;
-
-    const rel=e.clientX/Math.max(1,innerWidth);
-
-    if(rel<0.46&&movePointer===null){
-      movePointer=e.pointerId;
-      originX=e.clientX;
-      originY=e.clientY;
-      c.setDir(rel<0.23?-1:1);
-      vibrate(7);
-    }else if(jumpPointer===null){
-      jumpPointer=e.pointerId;
-      c.setJump(true);
-      vibrate(8);
-    }
-
+    if(e.pointerType==="mouse"||!beginJump())return;
+    jumpPointers.add(e.pointerId);
     try{surface.setPointerCapture(e.pointerId)}catch(err){}
     e.preventDefault();
   },{passive:false});
 
-  surface.addEventListener("pointermove",e=>{
-    if(e.pointerId!==movePointer)return;
-    const c=controls();
-    if(!c)return;
-    const dx=e.clientX-originX;
-    const dead=12;
-    c.setDir(dx<-dead?-1:dx>dead?1:0);
+  const endPointer=e=>{
+    if(!jumpPointers.has(e.pointerId))return;
+    jumpPointers.delete(e.pointerId);
+    releaseIfDone();
+  };
+  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>surface.addEventListener(type,endPointer,{passive:true}));
+
+  // Touch Events fallback for mobile browsers/webviews where Pointer Events are unreliable.
+  surface.addEventListener("touchstart",e=>{
+    if(window.PointerEvent)return;
+    if(!active())return;
+    touchJumpCount=e.touches.length;
+    if(touchJumpCount>0){setJump(true);vibrate(7)}
     e.preventDefault();
   },{passive:false});
-
-  const finish=e=>{
-    if(e.pointerId===movePointer)stopMove();
-    if(e.pointerId===jumpPointer)stopJump();
-  };
-  ["pointerup","pointercancel","lostpointercapture"].forEach(type=>surface.addEventListener(type,finish,{passive:true}));
+  surface.addEventListener("touchend",e=>{
+    if(window.PointerEvent)return;
+    touchJumpCount=e.touches.length;
+    releaseIfDone();
+    e.preventDefault();
+  },{passive:false});
+  surface.addEventListener("touchcancel",()=>{if(!window.PointerEvent)releaseAll()},{passive:true});
 
   addEventListener("blur",releaseAll);
   addEventListener("orientationchange",()=>setTimeout(releaseAll,80),{passive:true});
   document.addEventListener("visibilitychange",()=>{if(document.hidden)releaseAll()});
 
-  window.__bgMobileFullTouch={get enabled(){return true}};
+  window.__bgMobileFullTouch={
+    get enabled(){return true},
+    get mode(){return "tap-any-free-area-to-jump"}
+  };
 })();
