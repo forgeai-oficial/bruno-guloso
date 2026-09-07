@@ -1,7 +1,7 @@
 (()=>{
   "use strict";
-  if(window.__BG_GLOBAL_RANKING_V3__) return;
-  window.__BG_GLOBAL_RANKING_V3__=true;
+  if(window.__BG_GLOBAL_RANKING_V4__) return;
+  window.__BG_GLOBAL_RANKING_V4__=true;
 
   const LOCAL_KEY="bruno_guloso_local_board_v2";
   const NAME_KEY="bruno_guloso_player_name";
@@ -32,15 +32,35 @@
     };
   }
 
+  // Pedido de 07/09/2026: retirar apenas o líder anômalo de ~22 mil pontos.
+  // Limitado ao PRIMEIRO colocado e somente à faixa 20k–25k para não afetar os demais.
+  function withoutRequestedBadTop(rows){
+    const arr=(rows||[]).map(normalizeRow).filter(r=>r.name);
+    if(arr.length&&arr[0].score>=20000&&arr[0].score<25000){
+      try{
+        const b=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}")||{};
+        const target=arr[0];
+        for(const k of Object.keys(b)){
+          if(cleanName(k).toLocaleLowerCase()===target.name.toLocaleLowerCase()&&Number(b[k]&&b[k].score||0)>=20000&&Number(b[k]&&b[k].score||0)<25000)delete b[k];
+        }
+        localStorage.setItem(LOCAL_KEY,JSON.stringify(b));
+      }catch(e){}
+      window.__bgSuppressedBadTop=arr[0];
+      return arr.slice(1);
+    }
+    return arr;
+  }
+
   function localBoard(){try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}")||{}}catch(e){return {}}}
   function localRows(){
-    return Object.entries(localBoard()).map(([name,v])=>normalizeRow({name,...(v||{})})).filter(x=>x.name)
+    const rows=Object.entries(localBoard()).map(([name,v])=>normalizeRow({name,...(v||{})})).filter(x=>x.name)
       .sort((a,b)=>b.score-a.score||b.distance-a.distance||a.when-b.when).slice(0,200);
+    return withoutRequestedBadTop(rows);
   }
   function mergeIntoLocal(rows){
     try{
       const b=localBoard();let changed=false;
-      for(const raw of rows||[]){
+      for(const raw of withoutRequestedBadTop(rows||[])){
         const r=normalizeRow(raw);if(!r.name)continue;
         let key=Object.keys(b).find(k=>cleanName(k).toLocaleLowerCase()===r.name.toLocaleLowerCase())||r.name;
         const prev=Number(b[key]&&b[key].score||0);
@@ -56,38 +76,37 @@
     const r=await fetch("/api/ranking",opts);if(!r.ok)throw new Error("ranking "+r.status);return r.json();
   }
 
-  function scoreHtml(r){
-    return `<div class="rank-score-main">${Math.floor(r.score)} pts</div><small>${r.distance} m · 🍩 ${r.donuts} · 🔵 ${r.blues}</small>`;
-  }
+  function scoreHtml(r){return `<div class="rank-score-main">${Math.floor(r.score)} pts</div><small>${r.distance} m · 🍩 ${r.donuts} · 🔵 ${r.blues}</small>`}
   function draw(el,rows,limit){
     if(!el)return;
-    const arr=(rows||[]).map(normalizeRow).slice(0,limit);
+    const arr=withoutRequestedBadTop(rows).slice(0,limit);
     if(!arr.length){el.innerHTML='<div class="rank-empty">Ainda não tem placar. Seja a primeira vítima.</div>';return}
     const me=cleanName(localStorage.getItem(NAME_KEY)||"").toLocaleLowerCase();
     el.innerHTML=arr.map((r,i)=>`<div class="rank-row rank-top${i+1}${cleanName(r.name).toLocaleLowerCase()===me?" rank-me":""}"><div class="rank-pos">${i<3?medals[i]:`${i+1}º`}</div><div>${esc(r.name)}</div><div class="rank-score">${scoreHtml(r)}</div></div>`).join("");
   }
   function paint(rows){
-    window.__bgLastRankingRows=(rows||[]).map(normalizeRow);
+    const clean=withoutRequestedBadTop(rows);
+    window.__bgLastRankingRows=clean;
     window.__bgLastRankingOnline=true;
     const label=document.getElementById("rankingModeLabel"),sub=document.getElementById("rankingSubtitle");
     if(label)label.textContent="ONLINE";
     if(sub)sub.textContent="Pontos = distância + 10 por rosquinha + 50 por cogumelo azul.";
-    draw(document.getElementById("gameOverRanking"),rows,3);
-    draw(document.getElementById("rankingFullList"),rows,10);
+    draw(document.getElementById("gameOverRanking"),clean,3);
+    draw(document.getElementById("rankingFullList"),clean,10);
   }
   async function refresh(){
     if(busy)return window.__bgGlobalRows||[];busy=true;
     try{
-      const data=await api("GET"),rows=Array.isArray(data)?data:(data&&data.rows)||[];
-      window.__bgGlobalRows=rows.map(normalizeRow);mergeIntoLocal(rows);paint(rows);return window.__bgGlobalRows;
+      const data=await api("GET"),raw=Array.isArray(data)?data:(data&&data.rows)||[],rows=withoutRequestedBadTop(raw);
+      window.__bgGlobalRows=rows;mergeIntoLocal(rows);paint(rows);return rows;
     }catch(e){return window.__bgGlobalRows||[]}
     finally{busy=false}
   }
   async function migrateLocal(){
     const rows=localRows();if(!rows.length)return refresh();
     try{
-      const data=await api("POST",{scores:rows}),globalRows=Array.isArray(data)?data:(data&&data.rows)||[];
-      window.__bgGlobalRows=globalRows.map(normalizeRow);mergeIntoLocal(globalRows);paint(globalRows);return window.__bgGlobalRows;
+      const data=await api("POST",{scores:rows}),raw=Array.isArray(data)?data:(data&&data.rows)||[],globalRows=withoutRequestedBadTop(raw);
+      window.__bgGlobalRows=globalRows;mergeIntoLocal(globalRows);paint(globalRows);return globalRows;
     }catch(e){return refresh()}
   }
   async function submitCurrent(){
@@ -98,8 +117,8 @@
     const sig=`${name.toLocaleLowerCase()}:${score}:${m.distance}:${m.donuts}:${m.blues}`;
     if(sig===lastSubmit)return refresh();lastSubmit=sig;
     try{
-      const data=await api("POST",{player:name,score,distance:m.distance,donuts:m.donuts,blues:m.blues}),rows=Array.isArray(data)?data:(data&&data.rows)||[];
-      window.__bgGlobalRows=rows.map(normalizeRow);mergeIntoLocal(rows);paint(rows);return window.__bgGlobalRows;
+      const data=await api("POST",{player:name,score,distance:m.distance,donuts:m.donuts,blues:m.blues}),raw=Array.isArray(data)?data:(data&&data.rows)||[],rows=withoutRequestedBadTop(raw);
+      window.__bgGlobalRows=rows;mergeIntoLocal(rows);paint(rows);return rows;
     }catch(e){lastSubmit="";return refresh()}
   }
 
