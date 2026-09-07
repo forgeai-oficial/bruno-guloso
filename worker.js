@@ -19,6 +19,13 @@ export class Leaderboard extends DurableObject {
     return String(value || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 16);
   }
 
+  playerKey(value) {
+    return this.cleanName(value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase();
+  }
+
   normalizeScore(value) {
     const n = Math.floor(Number(value) || 0);
     return Math.max(0, Math.min(1000000, n));
@@ -63,19 +70,48 @@ export class Leaderboard extends DurableObject {
         blues: this.normalizeBlues(r && r.blues),
         when: Number(r && r.when) || 0,
       }))
-      .filter((r) => r.name)
+      .filter((r) => r.name && r.score > 0)
       .sort((a, b) => b.score - a.score || b.distance - a.distance || b.donuts - a.donuts || b.blues - a.blues || a.when - b.when)
       .slice(0, 200);
   }
 
+  async cleanupLegacyTestScore(board) {
+    const markerKey = "ranking_cleanup_zanettibonitao_22k_v1";
+    if (await this.ctx.storage.get(markerKey)) return board;
+
+    let changed = false;
+    for (const [key, row] of Object.entries(board || {})) {
+      if (this.playerKey(row && row.name) !== "zanettibonitao") continue;
+      const score = this.normalizeScore(row && row.score);
+      if (score < 20000 || score > 25000) continue;
+      board[key] = {
+        ...(row || {}),
+        name: this.cleanName(row && row.name),
+        score: 0,
+        distance: 0,
+        donuts: 0,
+        blues: 0,
+        when: Date.now(),
+      };
+      changed = true;
+    }
+
+    if (changed) await this.ctx.storage.put("board_v2", board);
+    await this.ctx.storage.put(markerKey, { done: true, at: Date.now(), changed });
+    return board;
+  }
+
   async getRows() {
-    const board = (await this.ctx.storage.get("board_v2")) || {};
+    let board = (await this.ctx.storage.get("board_v2")) || {};
+    board = await this.cleanupLegacyTestScore(board);
     return this.sortBoard(board).slice(0, 20);
   }
 
   async submit(payload) {
-    const board = (await this.ctx.storage.get("board_v2")) || {};
-    const incoming = Array.isArray(payload && payload.scores)
+    let board = (await this.ctx.storage.get("board_v2")) || {};
+    board = await this.cleanupLegacyTestScore(board);
+    const fromLocalMigration = Array.isArray(payload && payload.scores);
+    const incoming = fromLocalMigration
       ? payload.scores
       : [payload || {}];
 
@@ -87,6 +123,13 @@ export class Leaderboard extends DurableObject {
       const donuts = this.normalizeDonuts(raw && raw.donuts);
       const blues = this.normalizeBlues(raw && raw.blues);
       if (!name) continue;
+
+      // Ignore only the stale test result being re-migrated from this browser.
+      // The player name remains fully usable for new, real runs.
+      if (fromLocalMigration && this.playerKey(name) === "zanettibonitao" && score >= 20000 && score <= 25000) {
+        continue;
+      }
+
       const key = name.toLocaleLowerCase();
       const prev = board[key];
       if (!prev || score > Number(prev.score || 0)) {
@@ -328,7 +371,7 @@ export default {
               '<script src="/no-timeout.js?v=1"></script>' +
               '<script src="/ranking-pro.js?v=3"></script>' +
               '<script src="/landing-pro.js?v=4"></script>' +
-              '<script src="/global-ranking.js?v=3"></script>' +
+              '<script src="/global-ranking.js?v=4"></script>' +
               '<script src="/mobile-responsive.js?v=4"></script>' +
               '<script src="/mobile-controls.js?v=4"></script>' +
               '<script src="/finish-pro.js?v=1"></script>' +
